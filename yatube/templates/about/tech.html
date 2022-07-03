@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Технологии{% endblock %}
+{% block content %}
+{% load static %}
+<div class="container py-5">
+  <h2 align='center'>Технологии, применяемые на сайте</h2>
+  <br>
+  <p>
+    <ul>
+      <li>
+        <b>Python </b> - высокоуровневый язык программирования общего назначения с динамической строгой 
+        типизацией и автоматическим управлением памятью.
+        <br><img src="{% static 'img/python.png' %}" width="40" height="40" class="d-inline-block align-top" alt="">
+      </li>
+      <li>
+        <b>Django</b> - свободный фреймворк для веб-приложений на языке Python, использующий шаблон проектирования MVC.
+        <br><img src="{% static 'img/django.png' %}" width="40" height="40" class="d-inline-block align-top" alt="">
+      </li>
+      <li>
+        <b>HTML</b> - стандартизированный язык разметки документов для просмотра веб-страниц в браузере.
+        <br><img src="{% static 'img/html.png' %}" width="40" height="40" class="d-inline-block align-top" alt="">
+      </li>
+    </ul>
+  </p>
+  <br>
+  <p>
+    Данные технологии мы изучали в рамках курса Backend на Django на платформе Я.Практикум. 
+    Python очень приятный язык для изучения, мне он очень нравится, но возникают сложности 
+    с пониманием к примеру классов и ООП, а так же декораторов. Однако я обязательно добьюсь полного 
+    понимания этих вещей.
+  </p>
+</div>
+{% endblock %} 
