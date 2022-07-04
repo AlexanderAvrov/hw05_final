@@ -20,24 +20,24 @@
                     </li>
                 {% endif %} 
                 <li class="list-group-item">
-                    Всего постов пользователя: {{ author.posts.count }}, <a href="{% url 'posts:profile' post.author  %}">читать</a>
+                    Всего постов пользователя: {{ post.author.posts.count }}, <a href="{% url 'posts:profile' post.author  %}">читать</a>
                 </li>
                 <li class="list-group-item">   
-                    Подписавшихся на автора: {{ author.following.count }}   
+                    Подписавшихся на автора: {{ post.author.following.count }}   
                 </li>
                 <li class="list-group-item">
-                    {% if request.user != author %}      
+                    {% if request.user != post.author %}      
                         {% if following %}
                         <a
                             class="btn btn-md btn-light"
-                            href="{% url 'posts:profile_unfollow' author.username %}" role="button"
+                            href="{% url 'posts:profile_unfollow' post.author.username %}" role="button"
                         >
                             Отписаться
                         </a>
                         {% else %}
                             <a
                             class="btn btn-md btn-primary"
-                            href="{% url 'posts:profile_follow' author.username %}" role="button"
+                            href="{% url 'posts:profile_follow' post.author.username %}" role="button"
                             >
                             Подписаться
                             </a>
@@ -53,12 +53,12 @@
             <div class='wordbreak'>
                 <p>{{ post.text|linebreaks }}</p> 
             </div>
-            {% if user == post.author %}
+            {% if request.user == post.author %}
                 <a href="{% url 'posts:post_edit' post_id=post.pk  %}">Редактировать</a>
             {% endif %}
             {% if not forloop.last %}<hr>{% endif %}
-            <p><b> Комментарии:</p></b>
-            {% include 'includes/comments.html' %}
+            <p><b> Комментарии:</b></p>
+            {% include 'posts/includes/comments.html' %}
         </article>
     </div>
 </div>

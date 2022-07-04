@@ -10,7 +10,7 @@ from django.core.cache import cache
 from django.conf import settings
 
 from ..constants import POSTS_LIMIT
-from ..models import Group, Post, Follow
+from ..models import Group, Post, Follow, Comment
 
 User = get_user_model()
 SECOND_PAGE_COUNT_POST = 3
@@ -70,6 +70,7 @@ class PostsPagesTests(TestCase):
             kwargs={'post_id': cls.posts[0].id},
         )
         cls.LOGIN = reverse('users:login')
+        cls.FOLLOW = reverse('posts:follow_index')
 
     @classmethod
     def tearDownClass(cls):
@@ -94,6 +95,7 @@ class PostsPagesTests(TestCase):
             self.DETAIL: 'posts/post_detail.html',
             self.CREATE: 'posts/create_post.html',
             self.EDIT: 'posts/create_post.html',
+            self.FOLLOW: 'posts/follow.html'
         }
         for reverse_name, template in templates_pages_names.items():
             with self.subTest(reverse_name=reverse_name):
@@ -159,18 +161,30 @@ class PostsPagesTests(TestCase):
     def test_profile_page_show_correct_context(self):
         """Шаблон profile.html сформирован с правильным контекстом."""
         response = self.authorized_client.get(self.PROFILE)
-        author_from_context = response.context['author']
-        self.assertEqual(author_from_context, self.user)
+        self.assertEqual(response.context['author'], self.user)
+        self.assertIn(response.context['following'], [True, False])
 
     def test_post_detail_page_show_correct_context(self):
         """Шаблон post_detail.html сформирован с правильным контекстом."""
+        Comment.objects.create(
+            text='test_Comment',
+            author=self.user,
+            post=self.posts[0],
+        )
         response = self.authorized_client.get(self.DETAIL)
-        post_from_post_detail = response.context['post']
-        self.assertEqual(post_from_post_detail.text, self.posts[1].text)
-        self.assertEqual(post_from_post_detail.id, self.posts[0].id)
-        self.assertEqual(post_from_post_detail.author, self.user)
-        self.assertEqual(post_from_post_detail.group, self.group)
-        self.assertEqual(post_from_post_detail.image, self.posts[0].image)
+        form_fields = {'text': forms.fields.CharField}
+        form_field = response.context.get('form').fields.get('text')
+        self.assertIsInstance(form_field, form_fields['text'])
+        self.assertEqual(response.context['post'].text, self.posts[1].text)
+        self.assertEqual(response.context['post'].id, self.posts[0].id)
+        self.assertEqual(response.context['post'].author, self.user)
+        self.assertEqual(response.context['post'].group, self.group)
+        self.assertEqual(response.context['post'].image, self.posts[0].image)
+        self.assertEqual(
+            response.context['comments'][0],
+            self.posts[0].comments.select_related('post', 'author')[0],
+        )
+        self.assertIn(response.context['following'], [True, False])
 
     def test_create_post_page_show_correct_context(self):
         """Шаблон create_post сформирован с правильным контекстом."""
@@ -196,9 +210,10 @@ class PostsPagesTests(TestCase):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
         self.assertEqual(response.context['post'].text, self.posts[1].text)
+        self.assertIn(response.context['is_edit'], [True, False])
 
     def test_group_shows_new_post_on_pages(self):
-        """Пост попадает на главную и только в свою группу и профиль автора"""
+        """Пост попадает на главную страницу, в свою группу и профиль автора"""
         user = User.objects.create_user(username='new_author')
         group = Group.objects.create(title='new_group', slug='new-slug')
         post = Post.objects.create(
@@ -218,14 +233,27 @@ class PostsPagesTests(TestCase):
                     response.context.get('page_obj').object_list[0],
                     post,
                 )
-        response = self.authorized_client.get(reverse(
-            'posts:group_list',
-            kwargs={'slug': self.group.slug},
-        ))
-        self.assertNotIn(
-            post,
-            response.context.get('page_obj').object_list,
+
+    def test_post_dont_shows_at_another_pages(self):
+        """Пост не попадает в чужую группу и профиль автора"""
+        user = User.objects.create_user(username='new_author')
+        group = Group.objects.create(title='new_group', slug='new-slug')
+        post = Post.objects.create(
+            author=user,
+            text='новый пост',
+            group=group,
         )
+        pages = (
+            reverse('posts:group_list', kwargs={'slug': self.group.slug}),
+            reverse('posts:profile', kwargs={'username': self.user.username}),
+        )
+        for reverses in pages:
+            with self.subTest(value=reverses):
+                response = self.authorized_client.get(reverses)
+                self.assertNotIn(
+                    post,
+                    response.context.get('page_obj').object_list,
+                )
 
     def test_cache_index_page(self):
         """Кеширование главной страницы работает"""
@@ -245,7 +273,7 @@ class PostsPagesTests(TestCase):
         )
 
     def test_following_for_users(self):
-        """Авторизованый пол-ль подписывается и удаляет подписки"""
+        """Только авторизованый пользователь создаёт подписку"""
         follow_count = Follow.objects.count()
         self.logined_client.get(reverse(
             'posts:profile_follow',
@@ -262,11 +290,19 @@ class PostsPagesTests(TestCase):
             args=[self.user.username],
         ))
         self.assertEqual(Follow.objects.count(), follow_count + 1)
+        follow = Follow.objects.latest(id)
+        self.assertEqual(follow.user, self.logined_client)
+        self.assertEqual(follow.author, self.user)
+
+    def test_following_for_users(self):
+        """Авторизованый пользователь удаляет подписки"""
+        Follow.objects.create(user=self.user_0, author=self.user)
+        follow_count = Follow.objects.count()
         self.logined_client.get(reverse(
             'posts:profile_unfollow',
             args=[self.user.username],
         ))
-        self.assertEqual(Follow.objects.count(), follow_count)
+        self.assertEqual(Follow.objects.count(), follow_count - 1)
 
     def test_new_post_shows_on_follow_page(self):
         """Только подписчик видит новую запись пол-ля на странице подписок"""
@@ -274,14 +310,9 @@ class PostsPagesTests(TestCase):
             'posts:profile_follow',
             args=[self.user.username],
         ))
-        form_data = {
-            'text': 'Текст для проверки подписок',
-            'group': self.group.id,
-        }
-        self.authorized_client.post(
-            reverse('posts:post_create'),
-            data=form_data,
-            follow=True,
+        Post.objects.create(
+            text='Текст для проверки подписок',
+            author=self.user,
         )
         response_follow_index = self.logined_client.get(reverse(
             'posts:follow_index',
@@ -289,6 +320,13 @@ class PostsPagesTests(TestCase):
         self.assertEqual(
             response_follow_index.context['page_obj'].object_list[0],
             Post.objects.first(),
+        )
+
+    def test_new_post_dont_shows_on_unfollow_page(self):
+        """Неподписчик не видит новую запись пол-ля на странице подписок"""
+        Post.objects.create(
+            text='Текст для проверки неподписок',
+            author=self.user,
         )
         response_unfollow_index = self.authorized_client.get(reverse(
             'posts:follow_index',

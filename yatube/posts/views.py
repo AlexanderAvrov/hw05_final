@@ -38,13 +38,10 @@ def profile(request, username):
         username=username,
     )
     post_list = author.posts.all()
-    if request.user.is_authenticated and Follow.objects.filter(
+    following = request.user.is_authenticated and Follow.objects.filter(
         user=request.user,
-        author=author
-    ).exists():
-        following = True
-    else:
-        following = False
+        author=author,
+    ).exists()
     context = {
         'page_obj': get_ten_posts_per_page(request, post_list),
         'author': author,
@@ -57,21 +54,16 @@ def profile(request, username):
 def post_detail(request, post_id):
     """Вью-функция просмотра отдельной публикации"""
     post = get_object_or_404(Post, id=post_id)
-    author = post.author
     form = CommentForm(request.POST or None)
     comments = post.comments.select_related('post', 'author')
-    if request.user.is_authenticated and Follow.objects.filter(
+    following = request.user.is_authenticated and Follow.objects.filter(
         user=request.user,
-        author=author
-    ).exists():
-        following = True
-    else:
-        following = False
+        author=post.author,
+    ).exists()
     context = {
         'post': post,
         'form': form,
         'comments': comments,
-        'author': author,
         'following': following,
     }
 
@@ -135,30 +127,35 @@ def add_comment(request, post_id):
 @login_required
 def follow_index(request):
     """Вью-функция страницы с постами на подписки"""
-    user = request.user
-    posts_list = Post.objects.filter(author__following__user=user)
+    posts_list = Post.objects.filter(author__following__user=request.user)
     context = {
-        'user': user,
+        'user': request.user,
         'page_obj': get_ten_posts_per_page(request, posts_list),
     }
+
     return render(request, 'posts/follow.html', context)
 
 
 @login_required
 def profile_follow(request, username):
-    author = User.objects.filter(username=username).get()
+    """Вью функция для создания подписки"""
+    author = get_object_or_404(User, username=username)
     if request.user == author or Follow.objects.filter(
         user=request.user,
         author=author,
     ).exists():
+
         return redirect('posts:profile', username=username)
     else:
         Follow.objects.create(user=request.user, author=author)
+
         return redirect('posts:follow_index')
 
 
 @login_required
 def profile_unfollow(request, username):
-    author = User.objects.filter(username=username).get()
+    """Вью функция для удаления подписки"""
+    author = get_object_or_404(User, username=username)
     Follow.objects.filter(user=request.user, author=author).delete()
+
     return redirect('posts:follow_index')

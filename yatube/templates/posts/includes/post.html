@@ -12,7 +12,7 @@
         {% if not group and post.group %}   
             <li>        
                 Сообщество: <a href="{% url 'posts:group_list' post.group.slug %}">
-                            {{ post.group }}</a>
+                            {{ post.group.title }}</a>
             </li>
         {% endif %} 
     </ul>

@@ -8,13 +8,13 @@
   <p> {{ group.description }} </p>
   <h5>Всего публикаций сообщества: {{ group.posts.count }} </h5>
   <br>
-  {% include 'includes/paginator.html' %}
+  {% include 'posts/includes/paginator.html' %}
   {% for post in page_obj %}
   
-    {% include 'posts/post.html' %}
+    {% include 'posts/includes/post.html' %}
   {% endfor %} 
   <br>
-    {% include 'includes/paginator.html' %}
+    {% include 'posts/includes/paginator.html' %}
   <br>
   <a href="{% url 'posts:index' %}">Назад на главную страницу</a>
   </div>  

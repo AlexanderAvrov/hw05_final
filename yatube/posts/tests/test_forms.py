@@ -13,6 +13,7 @@ User = get_user_model()
 TEMP_MEDIA_ROOT = tempfile.mkdtemp(dir=settings.BASE_DIR)
 
 
+@override_settings(MEDIA_ROOT=TEMP_MEDIA_ROOT)
 class FormsTests(TestCase):
     """Проверка форм приложения Posts"""
 
@@ -75,8 +76,9 @@ class FormsTests(TestCase):
         take_post = Post.objects.first()
         self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertEqual(take_post.text, form_data['text'])
-        self.assertEqual(take_post.group.id, form_data['group'])
+        self.assertEqual(take_post.group, self.group)
         self.assertEqual(take_post.author, self.user)
+        self.assertEqual(take_post.image.read(), gif)
 
     def test_edit_post_form_by_atorized_client(self):
         """Валидная форма изменяет пост от авторизованного автора поста"""
@@ -97,11 +99,12 @@ class FormsTests(TestCase):
         ))
         self.assertEqual(Post.objects.count(), posts_count)
         self.assertEqual(take_post.text, form_data['text'])
-        self.assertEqual(take_post.group.id, form_data['group'])
+        self.assertEqual(take_post.group, self.group)
         self.assertEqual(take_post.author, self.user)
 
     def test_add_comment_to_post(self):
         """Валидная форма создаёт комментарий только юзером с регистрацией"""
+        count_comments = Comment.objects.count()
         form_data = {'text': 'Test comment'}
         self.authorized_client.post(
             reverse('posts:comment', kwargs={'post_id': self.post.id}),
@@ -109,7 +112,12 @@ class FormsTests(TestCase):
             follow=True,
         )
         self.assertEqual(Comment.objects.first().text, form_data['text'])
+        self.assertEqual(Comment.objects.count(), count_comments + 1)
+
+    def test_add_comment_to_post(self):
+        """Валидная форма не создаёт комментарий незалог-ным пользователем"""
         count_comments = Comment.objects.count()
+        form_data = {'text': 'Test comment'}
         self.client.post(
             reverse('posts:comment', kwargs={'post_id': self.post.id}),
             data=form_data,

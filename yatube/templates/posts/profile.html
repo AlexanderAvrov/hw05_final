@@ -14,6 +14,9 @@
           <li class="list-group-item">   
             Подписавшихся на автора: {{ author.following.count }}   
           </li>
+          <li class="list-group-item">   
+            Подписался на других: {{ author.follower.count }}   
+          </li>
           <li class="list-group-item">
             {% if request.user != author %}    
               {% if following %}
@@ -36,12 +39,12 @@
         </ul>
       </aside>
       <article class="col-12 col-md-9">
-        {% include 'includes/paginator.html' %}
+        {% include 'posts/includes/paginator.html' %}
         {% for post in page_obj %}
-          {% include 'posts/post.html' %}
+          {% include 'posts/includes/post.html' %}
         {% endfor %}
         <br>
-        {% include 'includes/paginator.html' %}
+        {% include 'posts/includes/paginator.html' %}
       </article>
     </div>
   </div>

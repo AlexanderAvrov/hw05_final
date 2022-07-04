@@ -23,7 +23,9 @@
               {% else %} action="{% url 'posts:post_create' %}" {% endif %}
               enctype="multipart/form-data">
             {% csrf_token %}
-            {% include 'posts/field_form_post.html'%}
+            {% for field in form %}
+              {% include 'includes/field_form.html'%}
+            {% endfor %}
             <div class="d-flex justify-content-end">
               <button type="submit" class="btn btn-primary">
                 {% if is_edit %} Сохранить 
