@@ -4,7 +4,7 @@
 {% endblock %}
 {% block content %}
   <div class="container py-5">     
-    <h2>Последние обновления на сайте <span style="color:red">Ya</span>tube</h2>
+    <h1>Последние обновления на сайте <span style="color:red">Ya</span>tube</h1>
     {% include 'posts/includes/switcher.html' %}
     {% include 'posts/includes/paginator.html' %}
     {% for post in page_obj %}

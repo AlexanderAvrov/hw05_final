@@ -4,7 +4,7 @@
 {% endblock %}
 {% block content %}
   <div class="container py-5">     
-    <h2>Лента публикаций авторов, на которых вы подписались</h2>
+    <h1>Лента публикаций авторов, на которых вы подписались</h1>
     {% include 'posts/includes/switcher.html' %}
     {% include 'posts/includes/paginator.html' %}
     {% for post in page_obj %}

@@ -210,7 +210,7 @@ class PostsPagesTests(TestCase):
                 form_field = response.context.get('form').fields.get(value)
                 self.assertIsInstance(form_field, expected)
         self.assertEqual(response.context['post'].text, self.posts[1].text)
-        self.assertIn(response.context['is_edit'], [True, False])
+        self.assertTrue(response.context['is_edit'])
 
     def test_group_shows_new_post_on_pages(self):
         """Пост попадает на главную страницу, в свою группу и профиль автора"""
@@ -273,19 +273,9 @@ class PostsPagesTests(TestCase):
         )
 
     def test_following_for_users(self):
-        """Только авторизованый пользователь создаёт подписку"""
+        """Авторизованый пользователь создаёт подписку"""
         follow_count = Follow.objects.count()
         self.logined_client.get(reverse(
-            'posts:profile_follow',
-            args=[self.user.username],
-        ))
-        self.assertEqual(Follow.objects.count(), follow_count + 1)
-        self.client.get(reverse(
-            'posts:profile_follow',
-            args=[self.user.username],
-        ))
-        self.assertEqual(Follow.objects.count(), follow_count + 1)
-        self.authorized_client.get(reverse(
             'posts:profile_follow',
             args=[self.user.username],
         ))
@@ -293,6 +283,24 @@ class PostsPagesTests(TestCase):
         follow = Follow.objects.latest(id)
         self.assertEqual(follow.user, self.logined_client)
         self.assertEqual(follow.author, self.user)
+
+    def test_following_for_users(self):
+        """Неавторизованый пользователь не может создать подписку"""
+        follow_count = Follow.objects.count()
+        self.client.get(reverse(
+            'posts:profile_follow',
+            args=[self.user.username],
+        ))
+        self.assertEqual(Follow.objects.count(), follow_count)
+
+    def test_following_for_users(self):
+        """Пользователь не может подписаться на сомого себя"""
+        follow_count = Follow.objects.count()
+        self.authorized_client.get(reverse(
+            'posts:profile_follow',
+            args=[self.user.username],
+        ))
+        self.assertEqual(Follow.objects.count(), follow_count)
 
     def test_following_for_users(self):
         """Авторизованый пользователь удаляет подписки"""
