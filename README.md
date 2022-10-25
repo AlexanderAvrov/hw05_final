@@ -9,5 +9,3 @@ Yatube (YaCube) - это социальная сеть, в которой мож
 
 ### Над проектом работал
 - Avrov Alexander / GitHub: https://github.com/AlexanderAvrov
-
-[![CI](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml/badge.svg?branch=master)](https://github.com/yandex-praktikum/hw05_final/actions/workflows/python-app.yml)
