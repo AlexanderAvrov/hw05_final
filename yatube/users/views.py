@@ -1,6 +1,6 @@
+from django.core.cache import cache
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
-from django.core.cache import cache
 
 from .forms import CreationForm
 
